@@ -48,9 +48,24 @@ for (const file of readdirSync(commandsPath).filter(f => f.endsWith('.js'))) {
   }
 }
 
+function setPresence(c) {
+  const guildCount = c.guilds.cache.size;
+  const activities = [
+    { name: 'snagbot.ashutoshswamy.in', type: 3 },       // Watching
+    { name: `${guildCount} servers`, type: 3 },           // Watching
+    { name: '/gstart to begin', type: 2 },                // Listening
+    { name: 'giveaways & drops', type: 5 },               // Competing
+  ];
+  const pick = activities[Math.floor(Date.now() / 20_000) % activities.length];
+  c.user.setPresence({ activities: [pick], status: 'online' });
+}
+
 client.once(Events.ClientReady, c => {
   console.log(`✅ Logged in as ${c.user.tag} (${c.user.id})`);
   console.log(`📦 Loaded ${client.commands.size} command(s).`);
+
+  setPresence(c);
+  setInterval(() => setPresence(c), 20_000);
 
   // Poll for expired giveaways every 15 seconds
   setInterval(() => checkExpiredGiveaways(client), 15_000);
