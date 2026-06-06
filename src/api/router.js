@@ -496,4 +496,44 @@ router.post('/settings/:guildId', requireAuth, async (req, res) => {
   res.json({ ok: true, savedInDb });
 });
 
+// ── Reset ─────────────────────────────────────────────────────────────────────
+
+router.delete('/reset/:guildId', requireAuth, async (req, res) => {
+  const { guildId } = req.params;
+
+  let guilds;
+  try {
+    guilds = await getUserGuilds(req.user.accessToken);
+  } catch {
+    return res.status(502).json({ error: 'Failed to verify guild access' });
+  }
+  if (!guilds.find(g => g.id === guildId && hasManageGuild(g.permissions))) {
+    return res.status(403).json({ error: 'Forbidden' });
+  }
+
+  try {
+    const { data: giveaways } = await supabase
+      .from('giveaways')
+      .select('message_id')
+      .eq('guild_id', guildId);
+
+    const messageIds = (giveaways ?? []).map(g => g.message_id);
+
+    if (messageIds.length > 0) {
+      await supabase.from('entries').delete().in('message_id', messageIds);
+    }
+
+    await supabase.from('giveaways').delete().eq('guild_id', guildId);
+    await supabase.from('settings').delete().eq('guild_id', guildId);
+
+    // Clear local settings fallback too
+    saveLocalSettings(guildId, { managerRole: '@Giveaway Manager', logsChannel: '#giveaways', embedColor: '#8827e5', telemetry: true });
+
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('[DELETE /reset/:guildId]', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 export default router;
