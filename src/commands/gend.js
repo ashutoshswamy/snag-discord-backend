@@ -81,33 +81,34 @@ export default {
         })
       );
 
-    await interaction.editReply({
+    const components = [
+      new ContainerBuilder()
+        .setAccentColor(0xED4245)
+        .addTextDisplayComponents(
+          new TextDisplayBuilder().setContent('## 🗑️  End a Giveaway Early')
+        )
+        .addSeparatorComponents(
+          new SeparatorBuilder().setDivider(true).setSpacing(SeparatorSpacingSize.Small)
+        )
+        .addTextDisplayComponents(
+          new TextDisplayBuilder().setContent(
+            'Select a giveaway below to end it immediately.\nWinners will be drawn and announced right away.'
+          )
+        )
+        .addSeparatorComponents(
+          new SeparatorBuilder().setDivider(false).setSpacing(SeparatorSpacingSize.Small)
+        )
+        .addActionRowComponents(
+          new ActionRowBuilder().addComponents(select)
+        ),
+    ];
+
+    const reply = await interaction.editReply({
       flags: MessageFlags.IsComponentsV2,
-      components: [
-        new ContainerBuilder()
-          .setAccentColor(0xED4245)
-          .addTextDisplayComponents(
-            new TextDisplayBuilder().setContent('## 🗑️  End a Giveaway Early')
-          )
-          .addSeparatorComponents(
-            new SeparatorBuilder().setDivider(true).setSpacing(SeparatorSpacingSize.Small)
-          )
-          .addTextDisplayComponents(
-            new TextDisplayBuilder().setContent(
-              'Select a giveaway below to end it immediately.\nWinners will be drawn and announced right away.'
-            )
-          )
-          .addSeparatorComponents(
-            new SeparatorBuilder().setDivider(false).setSpacing(SeparatorSpacingSize.Small)
-          )
-          .addActionRowComponents(
-            new ActionRowBuilder().addComponents(select)
-          ),
-      ],
+      components,
     });
-    const reply = await interaction.fetchReply().catch(() => null);
     if (reply) {
-      registerComponentTimeout(reply.id, interaction);
+      registerComponentTimeout(reply.id, interaction, components);
     }
   },
 };

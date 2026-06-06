@@ -144,7 +144,7 @@ export default {
     await interaction.reply(payload);
     const reply = await interaction.fetchReply().catch(() => null);
     if (reply) {
-      registerComponentTimeout(reply.id, interaction);
+      registerComponentTimeout(reply.id, interaction, payload.components);
     }
   },
 };

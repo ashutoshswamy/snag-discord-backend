@@ -30,7 +30,7 @@ async function handleHelpSelect(interaction) {
   await interaction.deferUpdate();
   const payload = await buildHelpPayload(interaction.guildId, page);
   await interaction.editReply(payload);
-  extendComponentTimeout(interaction.message.id, interaction);
+  extendComponentTimeout(interaction.message.id, payload.components, interaction);
 }
 
 const VALID_FILTERS = ['all', 'giveaway', 'drop'];
@@ -52,8 +52,9 @@ export async function handleGlistRefreshButton(interaction) {
     return interaction.editReply({ content: '❌ Failed to fetch giveaways.' });
   }
 
-  await interaction.editReply(buildGlistPayload(giveaways ?? [], filter));
-  extendComponentTimeout(interaction.message.id, interaction);
+  const payload = buildGlistPayload(giveaways ?? [], filter);
+  await interaction.editReply(payload);
+  extendComponentTimeout(interaction.message.id, payload.components, interaction);
 }
 
 async function handleGlistFilter(interaction) {
@@ -72,8 +73,9 @@ async function handleGlistFilter(interaction) {
     return interaction.editReply({ content: '❌ Failed to fetch giveaways.' });
   }
 
-  await interaction.editReply(buildGlistPayload(giveaways ?? [], filter));
-  extendComponentTimeout(interaction.message.id, interaction);
+  const payload = buildGlistPayload(giveaways ?? [], filter);
+  await interaction.editReply(payload);
+  extendComponentTimeout(interaction.message.id, payload.components, interaction);
 }
 
 async function handleGendSelect(interaction) {

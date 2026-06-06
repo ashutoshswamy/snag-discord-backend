@@ -35,10 +35,11 @@ export function disableAllComponents(components) {
  * Registers a component timeout for a given message.
  * @param {string} messageId The ID of the message.
  * @param {object} interaction The interaction object.
+ * @param {Array} components The original components array/builders.
  * @param {number} duration Timeout duration in milliseconds (default 60000ms / 1 minute).
  */
-export function registerComponentTimeout(messageId, interaction, duration = 60000) {
-  if (!messageId || !interaction) return;
+export function registerComponentTimeout(messageId, interaction, components, duration = 60000) {
+  if (!messageId || !interaction || !components) return;
 
   // Clear any existing timeout for this message
   if (activeTimeouts.has(messageId)) {
@@ -48,25 +49,23 @@ export function registerComponentTimeout(messageId, interaction, duration = 6000
   const timer = setTimeout(async () => {
     activeTimeouts.delete(messageId);
     try {
-      const msg = await interaction.fetchReply().catch(() => null);
-      if (msg && msg.components && msg.components.length > 0) {
-        const disabled = disableAllComponents(msg.components);
-        await interaction.editReply({ components: disabled }).catch(() => null);
-      }
+      const disabled = disableAllComponents(components);
+      await interaction.editReply({ components: disabled }).catch(() => null);
     } catch (err) {
       // Ignore: interaction expired, message deleted, etc.
     }
   }, duration);
 
-  activeTimeouts.set(messageId, { timer, interaction, duration });
+  activeTimeouts.set(messageId, { timer, interaction, components, duration });
 }
 
 /**
  * Extends the component timeout for a message.
  * @param {string} messageId The ID of the message.
+ * @param {Array} newComponents The new components array/builders.
  * @param {object} newInteraction Optional new interaction object to use.
  */
-export function extendComponentTimeout(messageId, newInteraction = null) {
+export function extendComponentTimeout(messageId, newComponents = null, newInteraction = null) {
   if (!messageId) return;
 
   const record = activeTimeouts.get(messageId);
@@ -74,6 +73,9 @@ export function extendComponentTimeout(messageId, newInteraction = null) {
 
   clearTimeout(record.timer);
 
+  if (newComponents) {
+    record.components = newComponents;
+  }
   if (newInteraction) {
     record.interaction = newInteraction;
   }
@@ -81,11 +83,8 @@ export function extendComponentTimeout(messageId, newInteraction = null) {
   record.timer = setTimeout(async () => {
     activeTimeouts.delete(messageId);
     try {
-      const msg = await record.interaction.fetchReply().catch(() => null);
-      if (msg && msg.components && msg.components.length > 0) {
-        const disabled = disableAllComponents(msg.components);
-        await record.interaction.editReply({ components: disabled }).catch(() => null);
-      }
+      const disabled = disableAllComponents(record.components);
+      await record.interaction.editReply({ components: disabled }).catch(() => null);
     } catch (err) {
       // Ignore
     }

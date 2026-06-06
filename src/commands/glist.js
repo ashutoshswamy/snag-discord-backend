@@ -120,10 +120,10 @@ export default {
       return interaction.editReply({ content: '❌ Failed to fetch giveaways. Try again.' });
     }
 
-    await interaction.editReply(buildGlistPayload(giveaways ?? [], 'all'));
-    const reply = await interaction.fetchReply().catch(() => null);
+    const payload = buildGlistPayload(giveaways ?? [], 'all');
+    const reply = await interaction.editReply(payload);
     if (reply) {
-      registerComponentTimeout(reply.id, interaction);
+      registerComponentTimeout(reply.id, interaction, payload.components);
     }
   },
 };

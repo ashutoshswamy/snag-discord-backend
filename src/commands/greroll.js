@@ -77,33 +77,34 @@ export default {
         })
       );
 
-    await interaction.editReply({
+    const components = [
+      new ContainerBuilder()
+        .setAccentColor(0x9B59B6)
+        .addTextDisplayComponents(
+          new TextDisplayBuilder().setContent('## 🎲  Reroll a Giveaway')
+        )
+        .addSeparatorComponents(
+          new SeparatorBuilder().setDivider(true).setSpacing(SeparatorSpacingSize.Small)
+        )
+        .addTextDisplayComponents(
+          new TextDisplayBuilder().setContent(
+            'Select a completed giveaway below to draw new winner(s).\nNew winners are chosen randomly from all entries.'
+          )
+        )
+        .addSeparatorComponents(
+          new SeparatorBuilder().setDivider(false).setSpacing(SeparatorSpacingSize.Small)
+        )
+        .addActionRowComponents(
+          new ActionRowBuilder().addComponents(select)
+        ),
+    ];
+
+    const reply = await interaction.editReply({
       flags: MessageFlags.IsComponentsV2,
-      components: [
-        new ContainerBuilder()
-          .setAccentColor(0x9B59B6)
-          .addTextDisplayComponents(
-            new TextDisplayBuilder().setContent('## 🎲  Reroll a Giveaway')
-          )
-          .addSeparatorComponents(
-            new SeparatorBuilder().setDivider(true).setSpacing(SeparatorSpacingSize.Small)
-          )
-          .addTextDisplayComponents(
-            new TextDisplayBuilder().setContent(
-              'Select a completed giveaway below to draw new winner(s).\nNew winners are chosen randomly from all entries.'
-            )
-          )
-          .addSeparatorComponents(
-            new SeparatorBuilder().setDivider(false).setSpacing(SeparatorSpacingSize.Small)
-          )
-          .addActionRowComponents(
-            new ActionRowBuilder().addComponents(select)
-          ),
-      ],
+      components,
     });
-    const reply = await interaction.fetchReply().catch(() => null);
     if (reply) {
-      registerComponentTimeout(reply.id, interaction);
+      registerComponentTimeout(reply.id, interaction, components);
     }
   },
 };

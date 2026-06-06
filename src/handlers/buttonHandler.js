@@ -27,7 +27,7 @@ async function handleHelpPageButton(interaction) {
   await interaction.deferUpdate();
   const payload = await buildHelpPayload(interaction.guildId, page);
   await interaction.editReply(payload);
-  extendComponentTimeout(interaction.message.id, interaction);
+  extendComponentTimeout(interaction.message.id, payload.components, interaction);
 }
 
 async function handleGiveawayJoin(interaction) {
