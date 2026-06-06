@@ -15,10 +15,11 @@ const router = Router();
 const DISCORD_API = 'https://discord.com/api/v10';
 const JWT_SECRET = process.env.JWT_SECRET || 'changeme-set-JWT_SECRET-in-env';
 const COOKIE_NAME = 'snag_session';
+const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
 const COOKIE_OPTS = {
   httpOnly: true,
-  sameSite: 'lax',
-  secure: process.env.NODE_ENV === 'production',
+  sameSite: 'none',
+  secure: true,
   maxAge: 7 * 24 * 60 * 60 * 1000,
   path: '/',
 };
@@ -51,7 +52,7 @@ router.get('/auth/discord', (req, res) => {
 
 router.get('/auth/callback', async (req, res) => {
   const { code } = req.query;
-  if (!code) return res.redirect('/?error=no_code');
+  if (!code) return res.redirect(`${FRONTEND_URL}/?error=no_code`);
 
   try {
     const tokenRes = await fetch(`${DISCORD_API}/oauth2/token`, {
@@ -69,7 +70,7 @@ router.get('/auth/callback', async (req, res) => {
     if (!tokenRes.ok) {
       const err = await tokenRes.text();
       console.error('[OAuth callback] Token exchange failed:', err);
-      return res.redirect('/?error=token_exchange');
+      return res.redirect(`${FRONTEND_URL}/?error=token_exchange`);
     }
 
     const { access_token } = await tokenRes.json();
@@ -91,10 +92,10 @@ router.get('/auth/callback', async (req, res) => {
 
     const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '7d' });
     res.cookie(COOKIE_NAME, token, COOKIE_OPTS);
-    res.redirect('/dashboard');
+    res.redirect(`${FRONTEND_URL}/dashboard`);
   } catch (err) {
     console.error('[OAuth callback] Unexpected error:', err);
-    res.redirect('/?error=server');
+    res.redirect(`${FRONTEND_URL}/?error=server`);
   }
 });
 
