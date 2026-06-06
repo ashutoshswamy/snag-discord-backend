@@ -29,13 +29,6 @@ app.use((req, res, next) => {
 
 app.use('/api', apiRouter);
 
-// Serve built Vite assets in production
-if (process.env.NODE_ENV === 'production') {
-  const distPath = join(__dirname_api, '../dashboard/dist');
-  app.use(express.static(distPath));
-  app.get('*', (req, res) => res.sendFile(join(distPath, 'index.html')));
-}
-
 app.get('/health', (_, res) => res.send('OK'));
 app.listen(PORT, () => console.log(`🌐 API server listening on port ${PORT}`));
 
