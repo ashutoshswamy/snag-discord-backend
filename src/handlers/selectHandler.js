@@ -8,6 +8,7 @@ import {
 import supabase from '../supabaseClient.js';
 import { endGiveaway, selectWinners } from '../utils/giveawayUtils.js';
 import { buildGlistPayload } from '../commands/glist.js';
+import { buildHelpPayload } from '../commands/help.js';
 
 export async function handleSelect(interaction) {
   const { customId } = interaction;
@@ -18,7 +19,16 @@ export async function handleSelect(interaction) {
     await handleGrerollSelect(interaction);
   } else if (customId === 'glist_filter') {
     await handleGlistFilter(interaction);
+  } else if (customId === 'help_select') {
+    await handleHelpSelect(interaction);
   }
+}
+
+async function handleHelpSelect(interaction) {
+  const page = interaction.values[0];
+  await interaction.deferUpdate();
+  const payload = await buildHelpPayload(interaction.guildId, page);
+  await interaction.editReply(payload);
 }
 
 const VALID_FILTERS = ['all', 'giveaway', 'drop'];

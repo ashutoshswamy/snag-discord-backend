@@ -7,6 +7,7 @@ import {
 import supabase from '../supabaseClient.js';
 import { buildDropPayload } from '../utils/giveawayUtils.js';
 import { getGuildSettings, getLogsChannel } from '../utils/settingsHelper.js';
+import { buildHelpPayload } from '../commands/help.js';
 
 export async function handleButton(interaction) {
   const { customId } = interaction;
@@ -15,7 +16,16 @@ export async function handleButton(interaction) {
     await handleGiveawayJoin(interaction);
   } else if (customId.startsWith('drop_claim_')) {
     await handleDropClaim(interaction);
+  } else if (customId.startsWith('help_page_')) {
+    await handleHelpPageButton(interaction);
   }
+}
+
+async function handleHelpPageButton(interaction) {
+  const page = interaction.customId.replace('help_page_', '');
+  await interaction.deferUpdate();
+  const payload = await buildHelpPayload(interaction.guildId, page);
+  await interaction.editReply(payload);
 }
 
 async function handleGiveawayJoin(interaction) {
