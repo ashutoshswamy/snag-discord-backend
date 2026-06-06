@@ -2,6 +2,7 @@ import {
   ContainerBuilder,
   TextDisplayBuilder,
   MessageFlags,
+  resolveColor,
 } from 'discord.js';
 import supabase from '../supabaseClient.js';
 import { buildDropPayload } from '../utils/giveawayUtils.js';
@@ -56,7 +57,7 @@ async function handleGiveawayJoin(interaction) {
         flags: MessageFlags.IsComponentsV2,
         components: [
           new ContainerBuilder()
-            .setAccentColor('#9B59B6')
+            .setAccentColor(0x9B59B6)
             .addTextDisplayComponents(
               new TextDisplayBuilder().setContent(
                 `🎉 You're already entered! Fingers crossed for **${giveaway.prize}**! 🍀`
@@ -73,7 +74,7 @@ async function handleGiveawayJoin(interaction) {
     flags: MessageFlags.IsComponentsV2,
     components: [
       new ContainerBuilder()
-        .setAccentColor('#57F287')
+        .setAccentColor(0x57F287)
         .addTextDisplayComponents(
           new TextDisplayBuilder().setContent(
             `✅ You're in! Good luck winning **${giveaway.prize}**! 🍀`

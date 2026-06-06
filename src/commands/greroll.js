@@ -46,7 +46,7 @@ export default {
         flags: MessageFlags.IsComponentsV2,
         components: [
           new ContainerBuilder()
-            .setAccentColor('#747F8D')
+            .setAccentColor(0x747F8D)
             .addTextDisplayComponents(
               new TextDisplayBuilder().setContent('## 📭  No Ended Giveaways')
             )
@@ -80,7 +80,7 @@ export default {
       flags: MessageFlags.IsComponentsV2,
       components: [
         new ContainerBuilder()
-          .setAccentColor('#9B59B6')
+          .setAccentColor(0x9B59B6)
           .addTextDisplayComponents(
             new TextDisplayBuilder().setContent('## 🎲  Reroll a Giveaway')
           )

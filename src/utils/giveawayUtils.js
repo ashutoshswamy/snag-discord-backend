@@ -7,16 +7,19 @@ import {
   ButtonBuilder,
   ButtonStyle,
   MessageFlags,
+  resolveColor as djsResolveColor,
 } from 'discord.js';
 import supabase from '../supabaseClient.js';
 import { getGuildSettings, getLogsChannel } from './settingsHelper.js';
 
-function resolveColor(colorStr, defaultColor) {
-  if (!colorStr) return defaultColor;
-  if (/^#?[0-9A-F]{6}$/i.test(colorStr)) {
-    return colorStr.startsWith('#') ? colorStr : `#${colorStr}`;
+function resolveAccentColor(colorStr, defaultInt) {
+  if (!colorStr) return defaultInt;
+  try {
+    const hex = /^[0-9A-F]{6}$/i.test(colorStr) ? `#${colorStr}` : colorStr;
+    return djsResolveColor(hex);
+  } catch {
+    return defaultInt;
   }
-  return defaultColor;
 }
 
 export function parseDuration(str) {
@@ -31,7 +34,7 @@ export function parseDuration(str) {
 export function buildGiveawayPayload(giveaway, embedColor, messageId = null) {
   const endsAt = new Date(giveaway.ends_at);
   const unixTs = Math.floor(endsAt.getTime() / 1000);
-  const color = resolveColor(embedColor, '#9B59B6');
+  const color = resolveAccentColor(embedColor, 0x9B59B6);
 
   const container = new ContainerBuilder()
     .setAccentColor(color)
@@ -73,7 +76,7 @@ export function buildGiveawayPayload(giveaway, embedColor, messageId = null) {
 }
 
 export function buildEndedGiveawayPayload(giveaway, winnerMentions, embedColor) {
-  const color = resolveColor(embedColor, '#747F8D');
+  const color = resolveAccentColor(embedColor, 0x747F8D);
   const winnersText = winnerMentions.length
     ? winnerMentions.join('\n')
     : '*No entries — no winner this time.*';
@@ -109,7 +112,7 @@ export function buildEndedGiveawayPayload(giveaway, winnerMentions, embedColor) 
 
 export function buildDropPayload(drop, claimed = false, claimerTag = null, messageId = null, embedColor) {
   if (claimed) {
-    const color = resolveColor(embedColor, '#57F287');
+    const color = resolveAccentColor(embedColor, 0x57F287);
     const container = new ContainerBuilder()
       .setAccentColor(color)
       .addTextDisplayComponents(
@@ -138,7 +141,7 @@ export function buildDropPayload(drop, claimed = false, claimerTag = null, messa
     return { flags: MessageFlags.IsComponentsV2, components: [container] };
   }
 
-  const color = resolveColor(embedColor, '#F0B232');
+  const color = resolveAccentColor(embedColor, 0xF0B232);
   const container = new ContainerBuilder()
     .setAccentColor(color)
     .addTextDisplayComponents(

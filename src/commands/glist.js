@@ -52,7 +52,7 @@ export function buildGlistPayload(giveaways, filter = 'all') {
     .setStyle(ButtonStyle.Secondary);
 
   const container = new ContainerBuilder()
-    .setAccentColor('#5865F2')
+    .setAccentColor(0x5865F2)
     .addTextDisplayComponents(new TextDisplayBuilder().setContent(title))
     .addSeparatorComponents(
       new SeparatorBuilder().setDivider(true).setSpacing(SeparatorSpacingSize.Small)

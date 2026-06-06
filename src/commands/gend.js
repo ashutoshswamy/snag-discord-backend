@@ -47,7 +47,7 @@ export default {
         flags: MessageFlags.IsComponentsV2,
         components: [
           new ContainerBuilder()
-            .setAccentColor('#747F8D')
+            .setAccentColor(0x747F8D)
             .addTextDisplayComponents(
               new TextDisplayBuilder().setContent('## 📭  No Active Giveaways')
             )
@@ -84,7 +84,7 @@ export default {
       flags: MessageFlags.IsComponentsV2,
       components: [
         new ContainerBuilder()
-          .setAccentColor('#ED4245')
+          .setAccentColor(0xED4245)
           .addTextDisplayComponents(
             new TextDisplayBuilder().setContent('## 🗑️  End a Giveaway Early')
           )

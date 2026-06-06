@@ -84,7 +84,7 @@ async function handleGendSelect(interaction) {
       flags: MessageFlags.IsComponentsV2,
       components: [
         new ContainerBuilder()
-          .setAccentColor('#ED4245')
+          .setAccentColor(0xED4245)
           .addTextDisplayComponents(
             new TextDisplayBuilder().setContent('❌ Giveaway not found or already ended.')
           ),
@@ -98,7 +98,7 @@ async function handleGendSelect(interaction) {
     flags: MessageFlags.IsComponentsV2,
     components: [
       new ContainerBuilder()
-        .setAccentColor('#57F287')
+        .setAccentColor(0x57F287)
         .addTextDisplayComponents(
           new TextDisplayBuilder().setContent('## ✅  Giveaway Ended')
         )
@@ -136,7 +136,7 @@ async function handleGrerollSelect(interaction) {
       flags: MessageFlags.IsComponentsV2,
       components: [
         new ContainerBuilder()
-          .setAccentColor('#ED4245')
+          .setAccentColor(0xED4245)
           .addTextDisplayComponents(
             new TextDisplayBuilder().setContent('❌ Giveaway not found.')
           ),
@@ -159,7 +159,7 @@ async function handleGrerollSelect(interaction) {
       flags: MessageFlags.IsComponentsV2,
       components: [
         new ContainerBuilder()
-          .setAccentColor('#747F8D')
+          .setAccentColor(0x747F8D)
           .addTextDisplayComponents(
             new TextDisplayBuilder().setContent(
               '📭 No entries found for this giveaway — nothing to reroll.'
@@ -176,7 +176,7 @@ async function handleGrerollSelect(interaction) {
     flags: MessageFlags.IsComponentsV2,
     components: [
       new ContainerBuilder()
-        .setAccentColor('#9B59B6')
+        .setAccentColor(0x9B59B6)
         .addTextDisplayComponents(
           new TextDisplayBuilder().setContent('## 🎲  Reroll Complete!')
         )
