@@ -1,0 +1,22 @@
+{
+  "name": "snag",
+  "version": "1.0.0",
+  "description": "Discord Giveaway Bot",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js",
+    "deploy": "node deploy-commands.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.43.0",
+    "cookie-parser": "^1.4.7",
+    "discord.js": "^14.15.3",
+    "dotenv": "^16.4.5",
+    "express": "^4.22.2",
+    "jsonwebtoken": "^9.0.3"
+  }
+}

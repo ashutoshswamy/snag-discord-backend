@@ -1,0 +1,122 @@
+import { ActionRowBuilder, ButtonBuilder, ButtonStyle } from 'discord.js';
+import supabase from '../supabaseClient.js';
+import { buildDropEmbed } from '../utils/giveawayUtils.js';
+import { getGuildSettings, getLogsChannel } from '../utils/settingsHelper.js';
+
+export async function handleButton(interaction) {
+  const { customId } = interaction;
+
+  if (customId.startsWith('giveaway_join_')) {
+    await handleGiveawayJoin(interaction);
+  } else if (customId.startsWith('drop_claim_')) {
+    await handleDropClaim(interaction);
+  }
+}
+
+async function handleGiveawayJoin(interaction) {
+  await interaction.deferReply({ ephemeral: true });
+
+  const messageId = interaction.customId.slice('giveaway_join_'.length);
+
+  const { data: giveaway, error: gErr } = await supabase
+    .from('giveaways')
+    .select('prize, ended')
+    .eq('message_id', messageId)
+    .maybeSingle();
+
+  if (gErr) {
+    console.error('[buttonHandler] Giveaway lookup failed:', gErr);
+    return interaction.editReply({ content: '❌ Could not verify giveaway. Try again.' });
+  }
+
+  if (!giveaway || giveaway.ended) {
+    return interaction.editReply({ content: '⏰ This giveaway has already ended.' });
+  }
+
+  const { error: insertErr } = await supabase.from('entries').insert({
+    message_id: messageId,
+    user_id: interaction.user.id,
+    guild_id: interaction.guildId,
+  });
+
+  if (insertErr) {
+    if (insertErr.code === '23505') {
+      return interaction.editReply({
+        content: `🎉 You're already entered! Fingers crossed for **${giveaway.prize}**! 🍀`,
+      });
+    }
+    console.error('[buttonHandler] Entry insert failed:', insertErr);
+    return interaction.editReply({ content: '❌ Failed to register entry. Try again.' });
+  }
+
+  await interaction.editReply({
+    content: `✅ You're in! Good luck winning **${giveaway.prize}**! 🍀`,
+  });
+}
+
+async function handleDropClaim(interaction) {
+  await interaction.deferUpdate();
+
+  const messageId = interaction.customId.slice('drop_claim_'.length);
+
+  const { data: drop, error } = await supabase
+    .from('giveaways')
+    .update({ ended: true, winner_ids: [interaction.user.id] })
+    .eq('message_id', messageId)
+    .eq('ended', false)
+    .select()
+    .maybeSingle();
+
+  if (error) {
+    console.error('[buttonHandler] Drop claim update failed:', error);
+    return interaction.followUp({ content: '❌ An error occurred. Try again.', ephemeral: true });
+  }
+
+  if (!drop) {
+    return interaction.followUp({
+      content: '⚡ Someone else was faster — this drop is gone!',
+      ephemeral: true,
+    });
+  }
+
+  await supabase.from('entries').insert({
+    message_id: messageId,
+    user_id: interaction.user.id,
+    guild_id: interaction.guildId,
+  });
+
+  const settings = await getGuildSettings(interaction.guildId);
+  const embedColor = settings?.embedColor;
+
+  const disabledRow = new ActionRowBuilder().addComponents(
+    new ButtonBuilder()
+      .setCustomId(`drop_claim_${messageId}`)
+      .setLabel('✅ Claimed')
+      .setStyle(ButtonStyle.Secondary)
+      .setDisabled(true)
+  );
+
+  await interaction.editReply({
+    embeds: [buildDropEmbed(drop, true, interaction.user.username, embedColor)],
+    components: [disabledRow],
+  });
+
+  // Resolve target logging channel
+  let targetChannel = interaction.channel;
+  if (settings?.logsChannel) {
+    const logsCh = await getLogsChannel(interaction.guild, settings.logsChannel);
+    if (logsCh) {
+      targetChannel = logsCh;
+    }
+  }
+
+  if (targetChannel.id === interaction.channelId) {
+    await interaction.followUp({
+      content: `⚡ <@${interaction.user.id}> snagged **${drop.prize}**! Congratulations! 🎊`,
+    });
+  } else {
+    await targetChannel.send({
+      content: `⚡ <@${interaction.user.id}> snagged **${drop.prize}** in <#${interaction.channelId}>! Congratulations! 🎊`,
+    }).catch(console.error);
+  }
+}
