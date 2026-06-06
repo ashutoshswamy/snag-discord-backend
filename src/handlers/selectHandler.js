@@ -125,10 +125,10 @@ export async function handleGlistButton(interaction) {
 
   const styles = f => (f === filter ? ButtonStyle.Primary : ButtonStyle.Secondary);
   const row = new ActionRowBuilder().addComponents(
-    new ButtonBuilder().setCustomId('glist_filter_all').setLabel('📋 All').setStyle(styles('all')),
-    new ButtonBuilder().setCustomId('glist_filter_giveaway').setLabel('🎊 Giveaways').setStyle(styles('giveaway')),
-    new ButtonBuilder().setCustomId('glist_filter_drop').setLabel('⚡ Drops').setStyle(styles('drop')),
-    new ButtonBuilder().setCustomId('glist_refresh').setLabel('🔄 Refresh').setStyle(ButtonStyle.Secondary)
+    new ButtonBuilder().setCustomId('glist_filter_all').setLabel('📋 All').setStyle(styles('all')).setDisabled(true),
+    new ButtonBuilder().setCustomId('glist_filter_giveaway').setLabel('🎊 Giveaways').setStyle(styles('giveaway')).setDisabled(true),
+    new ButtonBuilder().setCustomId('glist_filter_drop').setLabel('⚡ Drops').setStyle(styles('drop')).setDisabled(true),
+    new ButtonBuilder().setCustomId('glist_refresh').setLabel('🔄 Refresh').setStyle(ButtonStyle.Secondary).setDisabled(true)
   );
 
   await interaction.editReply({
