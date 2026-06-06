@@ -8,7 +8,7 @@ import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { handleButton } from './src/handlers/buttonHandler.js';
 import { handleModal } from './src/handlers/modalHandler.js';
-import { handleSelect, handleGlistButton } from './src/handlers/selectHandler.js';
+import { handleSelect, handleGlistRefreshButton } from './src/handlers/selectHandler.js';
 import { checkExpiredGiveaways } from './src/utils/giveawayUtils.js';
 import apiRouter from './src/api/router.js';
 
@@ -73,8 +73,8 @@ client.on(Events.InteractionCreate, async interaction => {
     } else if (interaction.isStringSelectMenu()) {
       await handleSelect(interaction);
     } else if (interaction.isButton()) {
-      if (interaction.customId.startsWith('glist_')) {
-        await handleGlistButton(interaction);
+      if (interaction.customId.startsWith('glist_refresh_')) {
+        await handleGlistRefreshButton(interaction);
       } else {
         await handleButton(interaction);
       }

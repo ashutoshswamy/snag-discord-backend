@@ -1,13 +1,19 @@
 import {
   SlashCommandBuilder,
-  EmbedBuilder,
+  ContainerBuilder,
+  TextDisplayBuilder,
+  SeparatorBuilder,
+  SeparatorSpacingSize,
   ActionRowBuilder,
+  StringSelectMenuBuilder,
+  StringSelectMenuOptionBuilder,
   ButtonBuilder,
   ButtonStyle,
+  MessageFlags,
 } from 'discord.js';
 import supabase from '../supabaseClient.js';
 
-export function buildGlistEmbed(giveaways, filter = 'all') {
+export function buildGlistPayload(giveaways, filter = 'all') {
   const filtered = giveaways.filter(g => {
     if (filter === 'giveaway') return !g.is_drop;
     if (filter === 'drop') return g.is_drop;
@@ -15,65 +21,82 @@ export function buildGlistEmbed(giveaways, filter = 'all') {
   });
 
   const title =
-    filter === 'giveaway' ? '🎊  Active Giveaways' :
-    filter === 'drop'     ? '⚡  Active Drops' :
-                            '📋  Active Giveaways & Drops';
+    filter === 'giveaway' ? '## 🎊  Active Giveaways' :
+    filter === 'drop'     ? '## ⚡  Active Drops' :
+                            '## 📋  Active Giveaways & Drops';
+
+  const filterSelect = new StringSelectMenuBuilder()
+    .setCustomId('glist_filter')
+    .setPlaceholder('Filter by type…')
+    .addOptions(
+      new StringSelectMenuOptionBuilder()
+        .setLabel('📋  All')
+        .setDescription('Show all active giveaways and drops')
+        .setValue('all')
+        .setDefault(filter === 'all'),
+      new StringSelectMenuOptionBuilder()
+        .setLabel('🎊  Giveaways')
+        .setDescription('Show timed giveaways only')
+        .setValue('giveaway')
+        .setDefault(filter === 'giveaway'),
+      new StringSelectMenuOptionBuilder()
+        .setLabel('⚡  Drops')
+        .setDescription('Show instant drops only')
+        .setValue('drop')
+        .setDefault(filter === 'drop')
+    );
+
+  const refreshButton = new ButtonBuilder()
+    .setCustomId(`glist_refresh_${filter}`)
+    .setLabel('🔄  Refresh')
+    .setStyle(ButtonStyle.Secondary);
+
+  const container = new ContainerBuilder()
+    .setAccentColor('#5865F2')
+    .addTextDisplayComponents(new TextDisplayBuilder().setContent(title))
+    .addSeparatorComponents(
+      new SeparatorBuilder().setDivider(true).setSpacing(SeparatorSpacingSize.Small)
+    );
 
   if (!filtered.length) {
-    return {
-      embeds: [
-        new EmbedBuilder()
-          .setTitle(title)
-          .setColor(0x5865F2)
-          .setDescription(
-            `*Nothing active right now.*\n\nStart one with \`/gstart\` or \`/gdrop\`!`
-          )
-          .setFooter({ text: 'Snag  •  Giveaway Manager' })
-          .setTimestamp(),
-      ],
-    };
+    container.addTextDisplayComponents(
+      new TextDisplayBuilder().setContent(
+        '*Nothing active right now.*\n\nStart one with `/gstart` or `/gdrop`!'
+      )
+    );
+  } else {
+    const lines = filtered.map(g => {
+      const jumpUrl = `https://discord.com/channels/${g.guild_id}/${g.channel_id}/${g.message_id}`;
+      const unixTs = Math.floor(new Date(g.ends_at).getTime() / 1000);
+      const typeIcon = g.is_drop ? '⚡' : '🎊';
+      const badge = g.is_drop ? '`Drop`' : `\`${g.winner_count}W\``;
+      return `${typeIcon}  **${g.prize}** ${badge}\n┗ Ends <t:${unixTs}:R>  •  [Jump ↗](${jumpUrl})`;
+    });
+
+    container.addTextDisplayComponents(
+      new TextDisplayBuilder().setContent(lines.join('\n\n'))
+    );
+
+    container.addSeparatorComponents(
+      new SeparatorBuilder().setDivider(false).setSpacing(SeparatorSpacingSize.Small)
+    );
+    container.addTextDisplayComponents(
+      new TextDisplayBuilder().setContent(`-# ${filtered.length} active  •  Snag`)
+    );
   }
 
-  const lines = filtered.map(g => {
-    const jumpUrl = `https://discord.com/channels/${g.guild_id}/${g.channel_id}/${g.message_id}`;
-    const unixTs = Math.floor(new Date(g.ends_at).getTime() / 1000);
-    const typeIcon = g.is_drop ? '⚡' : '🎊';
-    const badge = g.is_drop ? '`Drop`' : `\`${g.winner_count}W\``;
-    return `${typeIcon}  **${g.prize}** ${badge}\n┗ Ends <t:${unixTs}:R>  •  [Jump ↗](${jumpUrl})`;
-  });
+  container
+    .addSeparatorComponents(
+      new SeparatorBuilder().setDivider(true).setSpacing(SeparatorSpacingSize.Small)
+    )
+    .addActionRowComponents(
+      new ActionRowBuilder().addComponents(filterSelect)
+    )
+    .addActionRowComponents(
+      new ActionRowBuilder().addComponents(refreshButton)
+    );
 
-  return {
-    embeds: [
-      new EmbedBuilder()
-        .setTitle(title)
-        .setColor(0x5865F2)
-        .setDescription(lines.join('\n\n'))
-        .setFooter({ text: `${filtered.length} active  •  Snag` })
-        .setTimestamp(),
-    ],
-  };
-}
-
-function buildFilterRow(active = 'all') {
-  const styles = f => (f === active ? ButtonStyle.Primary : ButtonStyle.Secondary);
-  return new ActionRowBuilder().addComponents(
-    new ButtonBuilder()
-      .setCustomId('glist_filter_all')
-      .setLabel('📋 All')
-      .setStyle(styles('all')),
-    new ButtonBuilder()
-      .setCustomId('glist_filter_giveaway')
-      .setLabel('🎊 Giveaways')
-      .setStyle(styles('giveaway')),
-    new ButtonBuilder()
-      .setCustomId('glist_filter_drop')
-      .setLabel('⚡ Drops')
-      .setStyle(styles('drop')),
-    new ButtonBuilder()
-      .setCustomId('glist_refresh')
-      .setLabel('🔄 Refresh')
-      .setStyle(ButtonStyle.Secondary)
-  );
+  return { flags: MessageFlags.IsComponentsV2, components: [container] };
 }
 
 export default {
@@ -96,9 +119,6 @@ export default {
       return interaction.editReply({ content: '❌ Failed to fetch giveaways. Try again.' });
     }
 
-    await interaction.editReply({
-      ...buildGlistEmbed(giveaways ?? [], 'all'),
-      components: [buildFilterRow('all')],
-    });
+    await interaction.editReply(buildGlistPayload(giveaways ?? [], 'all'));
   },
 };

@@ -1,4 +1,13 @@
-import { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } from 'discord.js';
+import {
+  ContainerBuilder,
+  TextDisplayBuilder,
+  SeparatorBuilder,
+  SeparatorSpacingSize,
+  ActionRowBuilder,
+  ButtonBuilder,
+  ButtonStyle,
+  MessageFlags,
+} from 'discord.js';
 import supabase from '../supabaseClient.js';
 import { getGuildSettings, getLogsChannel } from './settingsHelper.js';
 
@@ -19,58 +28,147 @@ export function parseDuration(str) {
   return val * map[unit];
 }
 
-export function buildGiveawayEmbed(giveaway, embedColor) {
+export function buildGiveawayPayload(giveaway, embedColor, messageId = null) {
   const endsAt = new Date(giveaway.ends_at);
   const unixTs = Math.floor(endsAt.getTime() / 1000);
-  return new EmbedBuilder()
-    .setTitle('🎊  G I V E A W A Y')
-    .setColor(resolveColor(embedColor, '#9B59B6'))
-    .setDescription(
-      `>>> 🎁  **${giveaway.prize}**\n\nClick **Enter Giveaway** below for a chance to win!\nEvery entry counts — good luck! 🍀`
+  const color = resolveColor(embedColor, '#9B59B6');
+
+  const container = new ContainerBuilder()
+    .setAccentColor(color)
+    .addTextDisplayComponents(
+      new TextDisplayBuilder().setContent('## 🎊  GIVEAWAY')
     )
-    .addFields(
-      { name: '🏆  Winners', value: `**${giveaway.winner_count}**`, inline: true },
-      { name: '⏰  Ends', value: `<t:${unixTs}:R>`, inline: true },
-      { name: '👤  Hosted by', value: `@${giveaway.host_tag}`, inline: true }
+    .addSeparatorComponents(
+      new SeparatorBuilder().setDivider(true).setSpacing(SeparatorSpacingSize.Small)
     )
-    .setFooter({ text: '🎲 Snag  •  Click the button below to enter!' })
-    .setTimestamp(endsAt);
+    .addTextDisplayComponents(
+      new TextDisplayBuilder().setContent(
+        `### 🎁  ${giveaway.prize}\n\nClick **Enter Giveaway** below for a chance to win!\nEvery entry counts — good luck! 🍀`
+      )
+    )
+    .addSeparatorComponents(
+      new SeparatorBuilder().setDivider(false).setSpacing(SeparatorSpacingSize.Small)
+    )
+    .addTextDisplayComponents(
+      new TextDisplayBuilder().setContent(
+        `-# 🏆 **${giveaway.winner_count}** winner(s)   ·   ⏰ Ends <t:${unixTs}:R>   ·   👤 Hosted by @${giveaway.host_tag}`
+      )
+    );
+
+  if (messageId) {
+    container.addSeparatorComponents(
+      new SeparatorBuilder().setDivider(false).setSpacing(SeparatorSpacingSize.Small)
+    );
+    container.addActionRowComponents(
+      new ActionRowBuilder().addComponents(
+        new ButtonBuilder()
+          .setCustomId(`giveaway_join_${messageId}`)
+          .setLabel('🎊  Enter Giveaway')
+          .setStyle(ButtonStyle.Primary)
+      )
+    );
+  }
+
+  return { flags: MessageFlags.IsComponentsV2, components: [container] };
 }
 
-export function buildEndedGiveawayEmbed(giveaway, winnerMentions, embedColor) {
-  const endsAt = new Date(giveaway.ends_at);
+export function buildEndedGiveawayPayload(giveaway, winnerMentions, embedColor) {
+  const color = resolveColor(embedColor, '#747F8D');
   const winnersText = winnerMentions.length
     ? winnerMentions.join('\n')
     : '*No entries — no winner this time.*';
-  return new EmbedBuilder()
-    .setTitle('🎊  GIVEAWAY ENDED')
-    .setColor(resolveColor(embedColor, '#747F8D'))
-    .setDescription(
-      `>>> 🎁  **${giveaway.prize}**\n\n🏆  **Winner(s):**\n${winnersText}`
+
+  const container = new ContainerBuilder()
+    .setAccentColor(color)
+    .addTextDisplayComponents(
+      new TextDisplayBuilder().setContent('## 🎊  GIVEAWAY ENDED')
     )
-    .setFooter({ text: 'Snag  •  Giveaway concluded' })
-    .setTimestamp(endsAt);
+    .addSeparatorComponents(
+      new SeparatorBuilder().setDivider(true).setSpacing(SeparatorSpacingSize.Small)
+    )
+    .addTextDisplayComponents(
+      new TextDisplayBuilder().setContent(
+        `### 🎁  ${giveaway.prize}\n\n🏆  **Winner(s):**\n${winnersText}`
+      )
+    )
+    .addSeparatorComponents(
+      new SeparatorBuilder().setDivider(false).setSpacing(SeparatorSpacingSize.Small)
+    )
+    .addActionRowComponents(
+      new ActionRowBuilder().addComponents(
+        new ButtonBuilder()
+          .setCustomId(`giveaway_join_${giveaway.message_id}`)
+          .setLabel('🔒  Giveaway Ended')
+          .setStyle(ButtonStyle.Secondary)
+          .setDisabled(true)
+      )
+    );
+
+  return { flags: MessageFlags.IsComponentsV2, components: [container] };
 }
 
-export function buildDropEmbed(drop, claimed = false, claimerTag = null, embedColor) {
+export function buildDropPayload(drop, claimed = false, claimerTag = null, messageId = null, embedColor) {
   if (claimed) {
-    return new EmbedBuilder()
-      .setTitle('✅  DROP CLAIMED')
-      .setColor(resolveColor(embedColor, '#57F287'))
-      .setDescription(
-        `>>> 🎁  **${drop.prize}**\n\n🏆  **${claimerTag}** snagged this drop!\nBetter luck next time, everyone else!`
+    const color = resolveColor(embedColor, '#57F287');
+    const container = new ContainerBuilder()
+      .setAccentColor(color)
+      .addTextDisplayComponents(
+        new TextDisplayBuilder().setContent('## ✅  DROP CLAIMED')
       )
-      .setFooter({ text: 'Snag  •  Drop concluded' })
-      .setTimestamp();
+      .addSeparatorComponents(
+        new SeparatorBuilder().setDivider(true).setSpacing(SeparatorSpacingSize.Small)
+      )
+      .addTextDisplayComponents(
+        new TextDisplayBuilder().setContent(
+          `### 🎁  ${drop.prize}\n\n🏆  **${claimerTag}** snagged this drop!\nBetter luck next time, everyone else!`
+        )
+      )
+      .addSeparatorComponents(
+        new SeparatorBuilder().setDivider(false).setSpacing(SeparatorSpacingSize.Small)
+      )
+      .addActionRowComponents(
+        new ActionRowBuilder().addComponents(
+          new ButtonBuilder()
+            .setCustomId(`drop_claim_${messageId ?? drop.message_id}`)
+            .setLabel('✅  Claimed')
+            .setStyle(ButtonStyle.Secondary)
+            .setDisabled(true)
+        )
+      );
+    return { flags: MessageFlags.IsComponentsV2, components: [container] };
   }
-  return new EmbedBuilder()
-    .setTitle('⚡  INSTANT DROP')
-    .setColor(resolveColor(embedColor, '#F0B232'))
-    .setDescription(
-      `>>> 🎁  **${drop.prize}**\n\n⚡  **First come, first served!**\nOne click. One winner. No waiting — move fast!`
+
+  const color = resolveColor(embedColor, '#F0B232');
+  const container = new ContainerBuilder()
+    .setAccentColor(color)
+    .addTextDisplayComponents(
+      new TextDisplayBuilder().setContent('## ⚡  INSTANT DROP')
     )
-    .setFooter({ text: 'Snag  •  Be the fastest!' })
-    .setTimestamp();
+    .addSeparatorComponents(
+      new SeparatorBuilder().setDivider(true).setSpacing(SeparatorSpacingSize.Small)
+    )
+    .addTextDisplayComponents(
+      new TextDisplayBuilder().setContent(
+        `### 🎁  ${drop.prize}\n\n⚡  **First come, first served!**\nOne click. One winner. No waiting — move fast!`
+      )
+    );
+
+  if (messageId) {
+    container
+      .addSeparatorComponents(
+        new SeparatorBuilder().setDivider(false).setSpacing(SeparatorSpacingSize.Small)
+      )
+      .addActionRowComponents(
+        new ActionRowBuilder().addComponents(
+          new ButtonBuilder()
+            .setCustomId(`drop_claim_${messageId}`)
+            .setLabel('⚡  Claim Drop')
+            .setStyle(ButtonStyle.Success)
+        )
+      );
+  }
+
+  return { flags: MessageFlags.IsComponentsV2, components: [container] };
 }
 
 export function selectWinners(entries, count) {
@@ -108,38 +206,24 @@ export async function endGiveaway(client, giveaway) {
 
   const message = await channel.messages.fetch(giveaway.message_id).catch(() => null);
   if (message) {
-    const disabledRow = new ActionRowBuilder().addComponents(
-      new ButtonBuilder()
-        .setCustomId(`giveaway_join_${giveaway.message_id}`)
-        .setLabel('🔒  Giveaway Ended')
-        .setStyle(ButtonStyle.Secondary)
-        .setDisabled(true)
-    );
     await message
-      .edit({ embeds: [buildEndedGiveawayEmbed(giveaway, winnerMentions, embedColor)], components: [disabledRow] })
+      .edit(buildEndedGiveawayPayload(giveaway, winnerMentions, embedColor))
       .catch(console.error);
   }
 
-  // Resolve logging channel
   let targetChannel = channel;
   if (settings?.logsChannel) {
     const logsCh = await getLogsChannel(channel.guild, settings.logsChannel);
-    if (logsCh) {
-      targetChannel = logsCh;
-    }
+    if (logsCh) targetChannel = logsCh;
   }
 
   if (winners.length > 0) {
     await targetChannel
-      .send({
-        content: `🎊 Congratulations ${winnerMentions.join(', ')}! You won **${giveaway.prize}**! 🎉`,
-      })
+      .send({ content: `🎊 Congratulations ${winnerMentions.join(', ')}! You won **${giveaway.prize}**! 🎉` })
       .catch(console.error);
   } else {
     await targetChannel
-      .send({
-        content: `📭 No entries for **${giveaway.prize}** — giveaway ended with no winner.`,
-      })
+      .send({ content: `📭 No entries for **${giveaway.prize}** — giveaway ended with no winner.` })
       .catch(console.error);
   }
 }

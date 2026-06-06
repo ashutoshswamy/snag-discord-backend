@@ -1,6 +1,10 @@
-import { ActionRowBuilder, ButtonBuilder, ButtonStyle } from 'discord.js';
+import {
+  ContainerBuilder,
+  TextDisplayBuilder,
+  MessageFlags,
+} from 'discord.js';
 import supabase from '../supabaseClient.js';
-import { buildDropEmbed } from '../utils/giveawayUtils.js';
+import { buildDropPayload } from '../utils/giveawayUtils.js';
 import { getGuildSettings, getLogsChannel } from '../utils/settingsHelper.js';
 
 export async function handleButton(interaction) {
@@ -30,7 +34,14 @@ async function handleGiveawayJoin(interaction) {
   }
 
   if (!giveaway || giveaway.ended) {
-    return interaction.editReply({ content: '⏰ This giveaway has already ended.' });
+    return interaction.editReply({
+      flags: MessageFlags.IsComponentsV2,
+      components: [
+        new ContainerBuilder().addTextDisplayComponents(
+          new TextDisplayBuilder().setContent('⏰ This giveaway has already ended.')
+        ),
+      ],
+    });
   }
 
   const { error: insertErr } = await supabase.from('entries').insert({
@@ -42,7 +53,16 @@ async function handleGiveawayJoin(interaction) {
   if (insertErr) {
     if (insertErr.code === '23505') {
       return interaction.editReply({
-        content: `🎉 You're already entered! Fingers crossed for **${giveaway.prize}**! 🍀`,
+        flags: MessageFlags.IsComponentsV2,
+        components: [
+          new ContainerBuilder()
+            .setAccentColor('#9B59B6')
+            .addTextDisplayComponents(
+              new TextDisplayBuilder().setContent(
+                `🎉 You're already entered! Fingers crossed for **${giveaway.prize}**! 🍀`
+              )
+            ),
+        ],
       });
     }
     console.error('[buttonHandler] Entry insert failed:', insertErr);
@@ -50,7 +70,16 @@ async function handleGiveawayJoin(interaction) {
   }
 
   await interaction.editReply({
-    content: `✅ You're in! Good luck winning **${giveaway.prize}**! 🍀`,
+    flags: MessageFlags.IsComponentsV2,
+    components: [
+      new ContainerBuilder()
+        .setAccentColor('#57F287')
+        .addTextDisplayComponents(
+          new TextDisplayBuilder().setContent(
+            `✅ You're in! Good luck winning **${giveaway.prize}**! 🍀`
+          )
+        ),
+    ],
   });
 }
 
@@ -88,26 +117,14 @@ async function handleDropClaim(interaction) {
   const settings = await getGuildSettings(interaction.guildId);
   const embedColor = settings?.embedColor;
 
-  const disabledRow = new ActionRowBuilder().addComponents(
-    new ButtonBuilder()
-      .setCustomId(`drop_claim_${messageId}`)
-      .setLabel('✅ Claimed')
-      .setStyle(ButtonStyle.Secondary)
-      .setDisabled(true)
+  await interaction.editReply(
+    buildDropPayload(drop, true, interaction.user.username, messageId, embedColor)
   );
 
-  await interaction.editReply({
-    embeds: [buildDropEmbed(drop, true, interaction.user.username, embedColor)],
-    components: [disabledRow],
-  });
-
-  // Resolve target logging channel
   let targetChannel = interaction.channel;
   if (settings?.logsChannel) {
     const logsCh = await getLogsChannel(interaction.guild, settings.logsChannel);
-    if (logsCh) {
-      targetChannel = logsCh;
-    }
+    if (logsCh) targetChannel = logsCh;
   }
 
   if (targetChannel.id === interaction.channelId) {

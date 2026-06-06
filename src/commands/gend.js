@@ -1,9 +1,13 @@
 import {
   SlashCommandBuilder,
-  EmbedBuilder,
+  ContainerBuilder,
+  TextDisplayBuilder,
+  SeparatorBuilder,
+  SeparatorSpacingSize,
   ActionRowBuilder,
   StringSelectMenuBuilder,
   StringSelectMenuOptionBuilder,
+  MessageFlags,
 } from 'discord.js';
 import supabase from '../supabaseClient.js';
 import { hasManagerPermission } from '../utils/settingsHelper.js';
@@ -40,12 +44,21 @@ export default {
 
     if (!giveaways?.length) {
       return interaction.editReply({
-        embeds: [
-          new EmbedBuilder()
-            .setTitle('📭 No Active Giveaways')
-            .setColor(0x747F8D)
-            .setDescription('There are no active giveaways to end right now.')
-            .setFooter({ text: 'Snag  •  Giveaway Manager' }),
+        flags: MessageFlags.IsComponentsV2,
+        components: [
+          new ContainerBuilder()
+            .setAccentColor('#747F8D')
+            .addTextDisplayComponents(
+              new TextDisplayBuilder().setContent('## 📭  No Active Giveaways')
+            )
+            .addSeparatorComponents(
+              new SeparatorBuilder().setDivider(true).setSpacing(SeparatorSpacingSize.Small)
+            )
+            .addTextDisplayComponents(
+              new TextDisplayBuilder().setContent(
+                'There are no active giveaways to end right now.\n\nStart one with `/gstart`!'
+              )
+            ),
         ],
       });
     }
@@ -68,16 +81,28 @@ export default {
       );
 
     await interaction.editReply({
-      embeds: [
-        new EmbedBuilder()
-          .setTitle('🗑️  End a Giveaway Early')
-          .setColor(0xED4245)
-          .setDescription(
-            'Select a giveaway below to end it immediately.\nWinners will be drawn and announced right away.'
+      flags: MessageFlags.IsComponentsV2,
+      components: [
+        new ContainerBuilder()
+          .setAccentColor('#ED4245')
+          .addTextDisplayComponents(
+            new TextDisplayBuilder().setContent('## 🗑️  End a Giveaway Early')
           )
-          .setFooter({ text: 'Snag  •  Giveaway Manager' }),
+          .addSeparatorComponents(
+            new SeparatorBuilder().setDivider(true).setSpacing(SeparatorSpacingSize.Small)
+          )
+          .addTextDisplayComponents(
+            new TextDisplayBuilder().setContent(
+              'Select a giveaway below to end it immediately.\nWinners will be drawn and announced right away.'
+            )
+          )
+          .addSeparatorComponents(
+            new SeparatorBuilder().setDivider(false).setSpacing(SeparatorSpacingSize.Small)
+          )
+          .addActionRowComponents(
+            new ActionRowBuilder().addComponents(select)
+          ),
       ],
-      components: [new ActionRowBuilder().addComponents(select)],
     });
   },
 };

@@ -1,9 +1,13 @@
 import {
   SlashCommandBuilder,
-  EmbedBuilder,
+  ContainerBuilder,
+  TextDisplayBuilder,
+  SeparatorBuilder,
+  SeparatorSpacingSize,
   ActionRowBuilder,
   StringSelectMenuBuilder,
   StringSelectMenuOptionBuilder,
+  MessageFlags,
 } from 'discord.js';
 import supabase from '../supabaseClient.js';
 import { hasManagerPermission } from '../utils/settingsHelper.js';
@@ -39,12 +43,21 @@ export default {
 
     if (!giveaways?.length) {
       return interaction.editReply({
-        embeds: [
-          new EmbedBuilder()
-            .setTitle('📭 No Ended Giveaways')
-            .setColor(0x747F8D)
-            .setDescription('No completed giveaways or drops found in this server.')
-            .setFooter({ text: 'Snag  •  Giveaway Manager' }),
+        flags: MessageFlags.IsComponentsV2,
+        components: [
+          new ContainerBuilder()
+            .setAccentColor('#747F8D')
+            .addTextDisplayComponents(
+              new TextDisplayBuilder().setContent('## 📭  No Ended Giveaways')
+            )
+            .addSeparatorComponents(
+              new SeparatorBuilder().setDivider(true).setSpacing(SeparatorSpacingSize.Small)
+            )
+            .addTextDisplayComponents(
+              new TextDisplayBuilder().setContent(
+                'No completed giveaways or drops found in this server.'
+              )
+            ),
         ],
       });
     }
@@ -64,16 +77,28 @@ export default {
       );
 
     await interaction.editReply({
-      embeds: [
-        new EmbedBuilder()
-          .setTitle('🎲  Reroll a Giveaway')
-          .setColor(0x9B59B6)
-          .setDescription(
-            'Select a completed giveaway below to draw new winner(s).\nNew winners are chosen randomly from all entries.'
+      flags: MessageFlags.IsComponentsV2,
+      components: [
+        new ContainerBuilder()
+          .setAccentColor('#9B59B6')
+          .addTextDisplayComponents(
+            new TextDisplayBuilder().setContent('## 🎲  Reroll a Giveaway')
           )
-          .setFooter({ text: 'Snag  •  Giveaway Manager' }),
+          .addSeparatorComponents(
+            new SeparatorBuilder().setDivider(true).setSpacing(SeparatorSpacingSize.Small)
+          )
+          .addTextDisplayComponents(
+            new TextDisplayBuilder().setContent(
+              'Select a completed giveaway below to draw new winner(s).\nNew winners are chosen randomly from all entries.'
+            )
+          )
+          .addSeparatorComponents(
+            new SeparatorBuilder().setDivider(false).setSpacing(SeparatorSpacingSize.Small)
+          )
+          .addActionRowComponents(
+            new ActionRowBuilder().addComponents(select)
+          ),
       ],
-      components: [new ActionRowBuilder().addComponents(select)],
     });
   },
 };

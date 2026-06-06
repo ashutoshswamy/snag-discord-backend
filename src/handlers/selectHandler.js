@@ -1,7 +1,13 @@
+import {
+  ContainerBuilder,
+  TextDisplayBuilder,
+  SeparatorBuilder,
+  SeparatorSpacingSize,
+  MessageFlags,
+} from 'discord.js';
 import supabase from '../supabaseClient.js';
 import { endGiveaway, selectWinners } from '../utils/giveawayUtils.js';
-import { buildGlistEmbed } from '../commands/glist.js';
-import { ActionRowBuilder, ButtonBuilder, ButtonStyle } from 'discord.js';
+import { buildGlistPayload } from '../commands/glist.js';
 
 export async function handleSelect(interaction) {
   const { customId } = interaction;
@@ -10,7 +16,48 @@ export async function handleSelect(interaction) {
     await handleGendSelect(interaction);
   } else if (customId === 'greroll_select') {
     await handleGrerollSelect(interaction);
+  } else if (customId === 'glist_filter') {
+    await handleGlistFilter(interaction);
   }
+}
+
+export async function handleGlistRefreshButton(interaction) {
+  // customId format: glist_refresh_<filter>
+  const filter = interaction.customId.replace('glist_refresh_', '') || 'all';
+  await interaction.deferUpdate();
+
+  const { data: giveaways, error } = await supabase
+    .from('giveaways')
+    .select('*')
+    .eq('guild_id', interaction.guildId)
+    .eq('ended', false)
+    .order('ends_at', { ascending: true });
+
+  if (error) {
+    console.error('[glist_refresh] DB query failed:', error);
+    return interaction.editReply({ content: '❌ Failed to fetch giveaways.' });
+  }
+
+  await interaction.editReply(buildGlistPayload(giveaways ?? [], filter));
+}
+
+async function handleGlistFilter(interaction) {
+  const filter = interaction.values[0];
+  await interaction.deferUpdate();
+
+  const { data: giveaways, error } = await supabase
+    .from('giveaways')
+    .select('*')
+    .eq('guild_id', interaction.guildId)
+    .eq('ended', false)
+    .order('ends_at', { ascending: true });
+
+  if (error) {
+    console.error('[glist_filter] DB query failed:', error);
+    return interaction.editReply({ content: '❌ Failed to fetch giveaways.' });
+  }
+
+  await interaction.editReply(buildGlistPayload(giveaways ?? [], filter));
 }
 
 async function handleGendSelect(interaction) {
@@ -34,16 +81,36 @@ async function handleGendSelect(interaction) {
 
   if (!giveaway) {
     return interaction.editReply({
-      content: '❌ Giveaway not found or already ended.',
-      components: [],
+      flags: MessageFlags.IsComponentsV2,
+      components: [
+        new ContainerBuilder()
+          .setAccentColor('#ED4245')
+          .addTextDisplayComponents(
+            new TextDisplayBuilder().setContent('❌ Giveaway not found or already ended.')
+          ),
+      ],
     });
   }
 
   await endGiveaway(interaction.client, giveaway);
+
   await interaction.editReply({
-    content: `✅ **${giveaway.prize}** has been ended — winners announced!`,
-    embeds: [],
-    components: [],
+    flags: MessageFlags.IsComponentsV2,
+    components: [
+      new ContainerBuilder()
+        .setAccentColor('#57F287')
+        .addTextDisplayComponents(
+          new TextDisplayBuilder().setContent('## ✅  Giveaway Ended')
+        )
+        .addSeparatorComponents(
+          new SeparatorBuilder().setDivider(true).setSpacing(SeparatorSpacingSize.Small)
+        )
+        .addTextDisplayComponents(
+          new TextDisplayBuilder().setContent(
+            `**${giveaway.prize}** has been ended — winners announced!`
+          )
+        ),
+    ],
   });
 }
 
@@ -66,8 +133,14 @@ async function handleGrerollSelect(interaction) {
 
   if (!giveaway) {
     return interaction.editReply({
-      content: '❌ Giveaway not found.',
-      components: [],
+      flags: MessageFlags.IsComponentsV2,
+      components: [
+        new ContainerBuilder()
+          .setAccentColor('#ED4245')
+          .addTextDisplayComponents(
+            new TextDisplayBuilder().setContent('❌ Giveaway not found.')
+          ),
+      ],
     });
   }
 
@@ -83,8 +156,16 @@ async function handleGrerollSelect(interaction) {
 
   if (!entries?.length) {
     return interaction.editReply({
-      content: '📭 No entries found for this giveaway — nothing to reroll.',
-      components: [],
+      flags: MessageFlags.IsComponentsV2,
+      components: [
+        new ContainerBuilder()
+          .setAccentColor('#747F8D')
+          .addTextDisplayComponents(
+            new TextDisplayBuilder().setContent(
+              '📭 No entries found for this giveaway — nothing to reroll.'
+            )
+          ),
+      ],
     });
   }
 
@@ -92,47 +173,21 @@ async function handleGrerollSelect(interaction) {
   const mentions = winners.map(w => `<@${w.user_id}>`).join(', ');
 
   await interaction.editReply({
-    content: `🎊 Reroll complete! New winner(s) for **${giveaway.prize}**: ${mentions} — congratulations!`,
-    embeds: [],
-    components: [],
-  });
-}
-
-export async function handleGlistButton(interaction) {
-  const { customId } = interaction;
-
-  const filterMap = {
-    glist_filter_all: 'all',
-    glist_filter_giveaway: 'giveaway',
-    glist_filter_drop: 'drop',
-  };
-
-  const filter = filterMap[customId] ?? 'all';
-
-  await interaction.deferUpdate();
-
-  const { data: giveaways, error } = await supabase
-    .from('giveaways')
-    .select('*')
-    .eq('guild_id', interaction.guildId)
-    .eq('ended', false)
-    .order('ends_at', { ascending: true });
-
-  if (error) {
-    console.error('[glist_button] DB query failed:', error);
-    return interaction.editReply({ content: '❌ Failed to fetch giveaways.' });
-  }
-
-  const styles = f => (f === filter ? ButtonStyle.Primary : ButtonStyle.Secondary);
-  const row = new ActionRowBuilder().addComponents(
-    new ButtonBuilder().setCustomId('glist_filter_all').setLabel('📋 All').setStyle(styles('all')).setDisabled(true),
-    new ButtonBuilder().setCustomId('glist_filter_giveaway').setLabel('🎊 Giveaways').setStyle(styles('giveaway')).setDisabled(true),
-    new ButtonBuilder().setCustomId('glist_filter_drop').setLabel('⚡ Drops').setStyle(styles('drop')).setDisabled(true),
-    new ButtonBuilder().setCustomId('glist_refresh').setLabel('🔄 Refresh').setStyle(ButtonStyle.Secondary).setDisabled(true)
-  );
-
-  await interaction.editReply({
-    ...buildGlistEmbed(giveaways ?? [], filter),
-    components: [row],
+    flags: MessageFlags.IsComponentsV2,
+    components: [
+      new ContainerBuilder()
+        .setAccentColor('#9B59B6')
+        .addTextDisplayComponents(
+          new TextDisplayBuilder().setContent('## 🎲  Reroll Complete!')
+        )
+        .addSeparatorComponents(
+          new SeparatorBuilder().setDivider(true).setSpacing(SeparatorSpacingSize.Small)
+        )
+        .addTextDisplayComponents(
+          new TextDisplayBuilder().setContent(
+            `New winner(s) for **${giveaway.prize}**:\n\n${mentions}\n\nCongratulations! 🎉`
+          )
+        ),
+    ],
   });
 }

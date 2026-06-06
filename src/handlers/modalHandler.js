@@ -1,6 +1,5 @@
-import { ActionRowBuilder, ButtonBuilder, ButtonStyle } from 'discord.js';
 import supabase from '../supabaseClient.js';
-import { parseDuration, buildGiveawayEmbed, buildDropEmbed } from '../utils/giveawayUtils.js';
+import { parseDuration, buildGiveawayPayload, buildDropPayload } from '../utils/giveawayUtils.js';
 import { getGuildSettings } from '../utils/settingsHelper.js';
 
 export async function handleModal(interaction) {
@@ -45,20 +44,10 @@ async function handleGstartModal(interaction) {
     host_tag: interaction.user.username,
   };
 
-  await interaction.reply({ embeds: [buildGiveawayEmbed(giveawayMeta, embedColor)], components: [] });
+  await interaction.reply(buildGiveawayPayload(giveawayMeta, embedColor));
   const sentMsg = await interaction.fetchReply();
 
-  const row = new ActionRowBuilder().addComponents(
-    new ButtonBuilder()
-      .setCustomId(`giveaway_join_${sentMsg.id}`)
-      .setLabel('🎊 Enter Giveaway')
-      .setStyle(ButtonStyle.Primary)
-  );
-
-  await interaction.editReply({
-    embeds: [buildGiveawayEmbed(giveawayMeta, embedColor)],
-    components: [row],
-  });
+  await interaction.editReply(buildGiveawayPayload(giveawayMeta, embedColor, sentMsg.id));
 
   const { error } = await supabase.from('giveaways').insert({
     message_id: sentMsg.id,
@@ -75,9 +64,9 @@ async function handleGstartModal(interaction) {
 
   if (error) {
     console.error('[gstart_modal] DB insert failed:', error);
-    await interaction.editReply({
+    await interaction.followUp({
       content: '⚠️ Giveaway posted but failed to save. Contact an admin.',
-      components: [],
+      ephemeral: true,
     });
   }
 }
@@ -88,20 +77,10 @@ async function handleGdropModal(interaction) {
   const settings = await getGuildSettings(interaction.guildId);
   const embedColor = settings?.embedColor;
 
-  await interaction.reply({ embeds: [buildDropEmbed({ prize }, false, null, embedColor)], components: [] });
+  await interaction.reply(buildDropPayload({ prize }, false, null, null, embedColor));
   const sentMsg = await interaction.fetchReply();
 
-  const row = new ActionRowBuilder().addComponents(
-    new ButtonBuilder()
-      .setCustomId(`drop_claim_${sentMsg.id}`)
-      .setLabel('⚡ Claim Drop')
-      .setStyle(ButtonStyle.Success)
-  );
-
-  await interaction.editReply({
-    embeds: [buildDropEmbed({ prize }, false, null, embedColor)],
-    components: [row],
-  });
+  await interaction.editReply(buildDropPayload({ prize }, false, null, sentMsg.id, embedColor));
 
   const expiresAt = new Date(Date.now() + 86_400_000);
 
@@ -120,9 +99,9 @@ async function handleGdropModal(interaction) {
 
   if (error) {
     console.error('[gdrop_modal] DB insert failed:', error);
-    await interaction.editReply({
+    await interaction.followUp({
       content: '⚠️ Drop posted but failed to save. Contact an admin.',
-      components: [],
+      ephemeral: true,
     });
   }
 }
