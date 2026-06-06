@@ -11,6 +11,7 @@ import {
 } from 'discord.js';
 import supabase from '../supabaseClient.js';
 import { hasManagerPermission } from '../utils/settingsHelper.js';
+import { registerComponentTimeout } from '../utils/componentTimeoutHelper.js';
 
 export default {
   data: new SlashCommandBuilder()
@@ -100,5 +101,9 @@ export default {
           ),
       ],
     });
+    const reply = await interaction.fetchReply().catch(() => null);
+    if (reply) {
+      registerComponentTimeout(reply.id, interaction);
+    }
   },
 };

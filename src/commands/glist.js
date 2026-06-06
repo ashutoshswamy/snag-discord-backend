@@ -12,6 +12,7 @@ import {
   MessageFlags,
 } from 'discord.js';
 import supabase from '../supabaseClient.js';
+import { registerComponentTimeout } from '../utils/componentTimeoutHelper.js';
 
 export function buildGlistPayload(giveaways, filter = 'all') {
   const filtered = giveaways.filter(g => {
@@ -120,5 +121,9 @@ export default {
     }
 
     await interaction.editReply(buildGlistPayload(giveaways ?? [], 'all'));
+    const reply = await interaction.fetchReply().catch(() => null);
+    if (reply) {
+      registerComponentTimeout(reply.id, interaction);
+    }
   },
 };

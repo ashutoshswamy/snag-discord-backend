@@ -12,6 +12,7 @@ import {
   MessageFlags,
 } from 'discord.js';
 import { getGuildSettings } from '../utils/settingsHelper.js';
+import { registerComponentTimeout } from '../utils/componentTimeoutHelper.js';
 
 export async function buildHelpPayload(guildId, page = 'overview') {
   const settings = await getGuildSettings(guildId);
@@ -141,5 +142,9 @@ export default {
   async execute(interaction) {
     const payload = await buildHelpPayload(interaction.guildId, 'overview');
     await interaction.reply(payload);
+    const reply = await interaction.fetchReply().catch(() => null);
+    if (reply) {
+      registerComponentTimeout(reply.id, interaction);
+    }
   },
 };

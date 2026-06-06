@@ -8,6 +8,7 @@ import supabase from '../supabaseClient.js';
 import { buildDropPayload } from '../utils/giveawayUtils.js';
 import { getGuildSettings, getLogsChannel } from '../utils/settingsHelper.js';
 import { buildHelpPayload } from '../commands/help.js';
+import { extendComponentTimeout } from '../utils/componentTimeoutHelper.js';
 
 export async function handleButton(interaction) {
   const { customId } = interaction;
@@ -26,6 +27,7 @@ async function handleHelpPageButton(interaction) {
   await interaction.deferUpdate();
   const payload = await buildHelpPayload(interaction.guildId, page);
   await interaction.editReply(payload);
+  extendComponentTimeout(interaction.message.id, interaction);
 }
 
 async function handleGiveawayJoin(interaction) {

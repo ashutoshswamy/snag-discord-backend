@@ -9,6 +9,7 @@ import supabase from '../supabaseClient.js';
 import { endGiveaway, selectWinners } from '../utils/giveawayUtils.js';
 import { buildGlistPayload } from '../commands/glist.js';
 import { buildHelpPayload } from '../commands/help.js';
+import { extendComponentTimeout, clearComponentTimeout } from '../utils/componentTimeoutHelper.js';
 
 export async function handleSelect(interaction) {
   const { customId } = interaction;
@@ -29,6 +30,7 @@ async function handleHelpSelect(interaction) {
   await interaction.deferUpdate();
   const payload = await buildHelpPayload(interaction.guildId, page);
   await interaction.editReply(payload);
+  extendComponentTimeout(interaction.message.id, interaction);
 }
 
 const VALID_FILTERS = ['all', 'giveaway', 'drop'];
@@ -51,6 +53,7 @@ export async function handleGlistRefreshButton(interaction) {
   }
 
   await interaction.editReply(buildGlistPayload(giveaways ?? [], filter));
+  extendComponentTimeout(interaction.message.id, interaction);
 }
 
 async function handleGlistFilter(interaction) {
@@ -70,10 +73,12 @@ async function handleGlistFilter(interaction) {
   }
 
   await interaction.editReply(buildGlistPayload(giveaways ?? [], filter));
+  extendComponentTimeout(interaction.message.id, interaction);
 }
 
 async function handleGendSelect(interaction) {
   await interaction.deferUpdate();
+  clearComponentTimeout(interaction.message.id);
 
   const messageId = interaction.values[0];
 
@@ -128,6 +133,7 @@ async function handleGendSelect(interaction) {
 
 async function handleGrerollSelect(interaction) {
   await interaction.deferUpdate();
+  clearComponentTimeout(interaction.message.id);
 
   const messageId = interaction.values[0];
 
