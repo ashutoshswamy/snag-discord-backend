@@ -30,7 +30,7 @@ export async function getUserGuilds(accessToken) {
 
 export async function getGuildChannels(guildId) {
   const res = await fetch(`${DISCORD_API}/guilds/${guildId}/channels`, {
-    headers: { Authorization: `Bot ${process.env.DISCORD_BOT_TOKEN}` },
+    headers: { Authorization: `Bot ${process.env.DISCORD_TOKEN}` },
   });
   if (!res.ok) throw new Error(`Discord API ${res.status}: failed to fetch channels`);
   const channels = await res.json();
@@ -43,7 +43,7 @@ export async function postMessage(channelId, body) {
   const res = await fetch(`${DISCORD_API}/channels/${channelId}/messages`, {
     method: 'POST',
     headers: {
-      Authorization: `Bot ${process.env.DISCORD_BOT_TOKEN}`,
+      Authorization: `Bot ${process.env.DISCORD_TOKEN}`,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify(body),
@@ -59,7 +59,7 @@ export async function editMessage(channelId, messageId, body) {
   const res = await fetch(`${DISCORD_API}/channels/${channelId}/messages/${messageId}`, {
     method: 'PATCH',
     headers: {
-      Authorization: `Bot ${process.env.DISCORD_BOT_TOKEN}`,
+      Authorization: `Bot ${process.env.DISCORD_TOKEN}`,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify(body),
