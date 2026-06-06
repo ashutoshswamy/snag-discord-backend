@@ -21,9 +21,11 @@ export async function handleSelect(interaction) {
   }
 }
 
+const VALID_FILTERS = ['all', 'giveaway', 'drop'];
+
 export async function handleGlistRefreshButton(interaction) {
-  // customId format: glist_refresh_<filter>
-  const filter = interaction.customId.replace('glist_refresh_', '') || 'all';
+  const raw = interaction.customId.replace('glist_refresh_', '');
+  const filter = VALID_FILTERS.includes(raw) ? raw : 'all';
   await interaction.deferUpdate();
 
   const { data: giveaways, error } = await supabase
@@ -42,7 +44,7 @@ export async function handleGlistRefreshButton(interaction) {
 }
 
 async function handleGlistFilter(interaction) {
-  const filter = interaction.values[0];
+  const filter = VALID_FILTERS.includes(interaction.values[0]) ? interaction.values[0] : 'all';
   await interaction.deferUpdate();
 
   const { data: giveaways, error } = await supabase

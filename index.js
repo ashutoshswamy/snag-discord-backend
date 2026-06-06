@@ -1,4 +1,19 @@
 import 'dotenv/config';
+
+// L-1: validate all required env vars before any service initializes
+const REQUIRED_ENV = ['DISCORD_TOKEN', 'JWT_SECRET', 'SUPABASE_URL', 'SUPABASE_SERVICE_KEY', 'CLIENT_ID', 'DISCORD_REDIRECT_URI'];
+const missing = REQUIRED_ENV.filter(k => !process.env[k]);
+if (missing.length) {
+  console.error(`❌ Missing required environment variables: ${missing.join(', ')}`);
+  process.exit(1);
+}
+
+// L-2: warn loudly if FRONTEND_URL not set in production
+if (!process.env.FRONTEND_URL && process.env.NODE_ENV === 'production') {
+  console.error('❌ FRONTEND_URL is not set in production environment.');
+  process.exit(1);
+}
+
 import express from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
@@ -93,10 +108,5 @@ client.on(Events.InteractionCreate, async interaction => {
     }
   }
 });
-
-if (!process.env.DISCORD_TOKEN) {
-  console.error('❌ DISCORD_TOKEN is not set in environment.');
-  process.exit(1);
-}
 
 client.login(process.env.DISCORD_TOKEN);

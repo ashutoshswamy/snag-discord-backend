@@ -63,7 +63,9 @@ export async function hasManagerPermission(member, guildId) {
     return member.roles.cache.has(cleanRole);
   }
 
-  // Otherwise, match by name (case-insensitive)
+  // Name-based matching: any server member who can create a role with this name gains access.
+  // Prefer configuring a role ID instead.
+  console.warn(`[hasManagerPermission] Guild ${guildId}: matching manager role by name "${cleanRole}" — use a role ID for stricter control.`);
   return member.roles.cache.some(role => role.name.toLowerCase() === cleanRole.toLowerCase());
 }
 

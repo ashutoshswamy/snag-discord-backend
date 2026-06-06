@@ -1,3 +1,4 @@
+import { randomInt } from 'crypto';
 import {
   ContainerBuilder,
   TextDisplayBuilder,
@@ -9,7 +10,7 @@ import {
   MessageFlags,
   resolveColor as djsResolveColor,
 } from 'discord.js';
-import supabase from '../supabaseClient.js';
+import supabase, { supabaseAdmin } from '../supabaseClient.js';
 import { getGuildSettings, getLogsChannel } from './settingsHelper.js';
 
 function resolveAccentColor(colorStr, defaultInt) {
@@ -175,12 +176,16 @@ export function buildDropPayload(drop, claimed = false, claimerTag = null, messa
 }
 
 export function selectWinners(entries, count) {
-  const shuffled = [...entries].sort(() => Math.random() - 0.5);
-  return shuffled.slice(0, Math.min(count, shuffled.length));
+  const arr = [...entries];
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = randomInt(0, i + 1);
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr.slice(0, Math.min(count, arr.length));
 }
 
 export async function endGiveaway(client, giveaway) {
-  const { data: entries, error: entriesErr } = await supabase
+  const { data: entries, error: entriesErr } = await supabaseAdmin
     .from('entries')
     .select('user_id')
     .eq('message_id', giveaway.message_id);
@@ -191,7 +196,7 @@ export async function endGiveaway(client, giveaway) {
   const winnerIds = winners.map(w => w.user_id);
   const winnerMentions = winnerIds.map(id => `<@${id}>`);
 
-  const { error: updateErr } = await supabase
+  const { error: updateErr } = await supabaseAdmin
     .from('giveaways')
     .update({ ended: true, winner_ids: winnerIds })
     .eq('message_id', giveaway.message_id);
@@ -233,7 +238,7 @@ export async function endGiveaway(client, giveaway) {
 
 export async function checkExpiredGiveaways(client) {
   try {
-    const { data: expired, error } = await supabase
+    const { data: expired, error } = await supabaseAdmin
       .from('giveaways')
       .select('*')
       .eq('ended', false)

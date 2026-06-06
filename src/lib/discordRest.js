@@ -1,10 +1,12 @@
+import { randomInt } from 'crypto';
+
 const DISCORD_API = 'https://discord.com/api/v10';
 
 // Simple per-token cache to avoid hammering Discord's rate limit
 const guildsCache = new Map(); // token -> { data, expiresAt }
 const GUILDS_CACHE_TTL = 10_000; // 10 seconds
 
-export async function getUserGuilds(accessToken) {
+export async function getUserGuilds(accessToken, retries = 3) {
   const cached = guildsCache.get(accessToken);
   if (cached && Date.now() < cached.expiresAt) return cached.data;
 
@@ -13,14 +15,14 @@ export async function getUserGuilds(accessToken) {
   });
 
   if (res.status === 429) {
+    if (retries <= 0) throw new Error('Discord rate limit exceeded. Try again shortly.');
     const { retry_after } = await res.json();
     await new Promise(r => setTimeout(r, (retry_after + 0.1) * 1000));
-    return getUserGuilds(accessToken); // retry once
+    return getUserGuilds(accessToken, retries - 1);
   }
 
   if (!res.ok) {
-    const body = await res.text();
-    throw new Error(`Discord API ${res.status}: ${body}`);
+    throw new Error(`Discord API error (${res.status})`);
   }
 
   const data = await res.json();
@@ -171,6 +173,10 @@ export function buildEndedEmbedPayload(giveaway, winnerMentions) {
 }
 
 export function pickWinners(entries, count) {
-  const shuffled = [...entries].sort(() => Math.random() - 0.5);
-  return shuffled.slice(0, Math.min(count, shuffled.length));
+  const arr = [...entries];
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = randomInt(0, i + 1);
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr.slice(0, Math.min(count, arr.length));
 }
