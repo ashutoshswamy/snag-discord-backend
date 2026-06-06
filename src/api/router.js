@@ -38,6 +38,36 @@ function requireAuth(req, res, next) {
   next();
 }
 
+// ── Status ──────────────────────────────────────────────────────────────────
+
+router.get('/status', async (req, res) => {
+  const client = req.discordClient;
+  const online = client?.isReady() ?? false;
+
+  const guildCount  = client?.guilds.cache.size ?? 0;
+  const memberCount = client?.guilds.cache.reduce((acc, g) => acc + (g.memberCount ?? 0), 0) ?? 0;
+  const latencyMs   = online ? client.ws.ping : -1;
+  const uptimeMs    = online ? (client.uptime ?? 0) : 0;
+  const commandCount = client?.commands?.size ?? 0;
+
+  let giveawayCount = 0;
+  try {
+    const { count } = await supabase.from('giveaways').select('*', { count: 'exact', head: true });
+    giveawayCount = count ?? 0;
+  } catch {}
+
+  const bot = online ? {
+    username: client.user.username,
+    avatar: client.user.displayAvatarURL({ size: 128 }),
+  } : null;
+
+  res.json({
+    online,
+    bot,
+    stats: { guildCount, memberCount, latencyMs, uptimeMs, commandCount, giveawayCount },
+  });
+});
+
 // ── Auth ────────────────────────────────────────────────────────────────────
 
 router.get('/auth/discord', (req, res) => {
