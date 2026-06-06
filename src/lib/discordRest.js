@@ -39,6 +39,17 @@ export async function getGuildChannels(guildId) {
     .sort((a, b) => a.position - b.position);
 }
 
+export async function getGuildRoles(guildId) {
+  const res = await fetch(`${DISCORD_API}/guilds/${guildId}/roles`, {
+    headers: { Authorization: `Bot ${process.env.DISCORD_TOKEN}` },
+  });
+  if (!res.ok) throw new Error(`Discord API ${res.status}: failed to fetch roles`);
+  const roles = await res.json();
+  return roles
+    .filter(r => r.name !== '@everyone')
+    .sort((a, b) => b.position - a.position);
+}
+
 export async function postMessage(channelId, body) {
   const res = await fetch(`${DISCORD_API}/channels/${channelId}/messages`, {
     method: 'POST',

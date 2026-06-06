@@ -4,7 +4,7 @@ import { join } from 'path';
 import jwt from 'jsonwebtoken';
 import supabase from '../supabaseClient.js';
 import {
-  getUserGuilds, hasManageGuild, getGuildChannels,
+  getUserGuilds, hasManageGuild, getGuildChannels, getGuildRoles,
   postMessage, editMessage, parseDuration,
   buildGiveawayPayload, buildDropPayload,
   buildEndedEmbedPayload, pickWinners,
@@ -203,6 +203,27 @@ router.get('/channels/:guildId', requireAuth, async (req, res) => {
     res.json(channels.map(c => ({ id: c.id, name: c.name })));
   } catch {
     res.status(502).json({ error: 'Failed to fetch channels. Is the bot in this server?' });
+  }
+});
+
+// ── Roles ─────────────────────────────────────────────────────────────────────
+
+router.get('/roles/:guildId', requireAuth, async (req, res) => {
+  const { guildId } = req.params;
+  let guilds;
+  try {
+    guilds = await getUserGuilds(req.user.accessToken);
+  } catch {
+    return res.status(502).json({ error: 'Failed to verify guild access' });
+  }
+  if (!guilds.find(g => g.id === guildId && hasManageGuild(g.permissions))) {
+    return res.status(403).json({ error: 'Forbidden' });
+  }
+  try {
+    const roles = await getGuildRoles(guildId);
+    res.json(roles.map(r => ({ id: r.id, name: r.name, color: r.color })));
+  } catch {
+    res.status(502).json({ error: 'Failed to fetch roles. Is the bot in this server?' });
   }
 });
 
