@@ -23,3 +23,6 @@ Thumbs.db
 
 # Supabase local
 supabase/.temp/
+
+# Local settings store (contains guild configs)
+src/api/settings.json

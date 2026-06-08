@@ -15,6 +15,7 @@ if (!process.env.FRONTEND_URL && process.env.NODE_ENV === 'production') {
 }
 
 import express from 'express';
+import helmet from 'helmet';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import { Client, GatewayIntentBits, Collection, Events } from 'discord.js';
@@ -34,6 +35,7 @@ const client = new Client({ intents: [GatewayIntentBits.Guilds] });
 client.commands = new Collection();
 
 const app = express();
+app.use(helmet());
 app.use(cors({
   origin: process.env.FRONTEND_URL || 'http://localhost:5173',
   credentials: true,
