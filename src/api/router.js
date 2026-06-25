@@ -176,7 +176,8 @@ router.get('/auth/callback', authLimiter, async (req, res) => {
     });
 
     if (!tokenRes.ok) {
-      console.error('[OAuth callback] Token exchange failed:', tokenRes.status);
+      const errorText = await tokenRes.text().catch(() => 'No response body');
+      console.error('[OAuth callback] Token exchange failed:', tokenRes.status, errorText);
       return res.redirect(`${FRONTEND_URL}/?error=token_exchange`);
     }
 

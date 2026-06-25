@@ -1,6 +1,6 @@
 import supabase from '../supabaseClient.js';
 import { parseDuration, buildGiveawayPayload, buildDropPayload } from '../utils/giveawayUtils.js';
-import { getGuildSettings } from '../utils/settingsHelper.js';
+import { getGuildSettings, hasManagerPermission } from '../utils/settingsHelper.js';
 
 export async function handleModal(interaction) {
   const { customId } = interaction;
@@ -13,23 +13,30 @@ export async function handleModal(interaction) {
 }
 
 async function handleGstartModal(interaction) {
+  await interaction.deferReply();
+
+  const isManager = await hasManagerPermission(interaction.member, interaction.guildId);
+  if (!isManager) {
+    return interaction.editReply({
+      content: '❌ You do not have the required manager role or permissions to run this command.',
+    });
+  }
+
   const prize = interaction.fields.getTextInputValue('prize').trim();
   const durationStr = interaction.fields.getTextInputValue('duration').trim();
   const winnersRaw = interaction.fields.getTextInputValue('winners').trim();
 
   const durationMs = parseDuration(durationStr);
   if (!durationMs) {
-    return interaction.reply({
+    return interaction.editReply({
       content: '❌ Invalid duration. Use formats like `30s`, `10m`, `2h`, `1d`, or `1w`.',
-      ephemeral: true,
     });
   }
 
   const winnerCount = parseInt(winnersRaw, 10);
   if (isNaN(winnerCount) || winnerCount < 1 || winnerCount > 20) {
-    return interaction.reply({
+    return interaction.editReply({
       content: '❌ Winner count must be a number between **1** and **20**.',
-      ephemeral: true,
     });
   }
 
@@ -44,7 +51,7 @@ async function handleGstartModal(interaction) {
     host_tag: interaction.user.username,
   };
 
-  await interaction.reply(buildGiveawayPayload(giveawayMeta, embedColor));
+  await interaction.editReply(buildGiveawayPayload(giveawayMeta, embedColor));
   const sentMsg = await interaction.fetchReply();
 
   await interaction.editReply(buildGiveawayPayload(giveawayMeta, embedColor, sentMsg.id));
@@ -72,12 +79,21 @@ async function handleGstartModal(interaction) {
 }
 
 async function handleGdropModal(interaction) {
+  await interaction.deferReply();
+
+  const isManager = await hasManagerPermission(interaction.member, interaction.guildId);
+  if (!isManager) {
+    return interaction.editReply({
+      content: '❌ You do not have the required manager role or permissions to run this command.',
+    });
+  }
+
   const prize = interaction.fields.getTextInputValue('prize').trim();
 
   const settings = await getGuildSettings(interaction.guildId);
   const embedColor = settings?.embedColor;
 
-  await interaction.reply(buildDropPayload({ prize }, false, null, null, embedColor));
+  await interaction.editReply(buildDropPayload({ prize }, false, null, null, embedColor));
   const sentMsg = await interaction.fetchReply();
 
   await interaction.editReply(buildDropPayload({ prize }, false, null, sentMsg.id, embedColor));

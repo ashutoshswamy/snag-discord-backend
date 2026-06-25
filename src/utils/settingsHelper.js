@@ -5,6 +5,9 @@ import supabase from '../supabaseClient.js';
 
 const SETTINGS_FILE = join(process.cwd(), 'src', 'api', 'settings.json');
 
+const _settingsCache = new Map();
+const CACHE_TTL = 60_000;
+
 function getLocalSettings(guildId) {
   try {
     if (!existsSync(SETTINGS_FILE)) {
@@ -21,6 +24,10 @@ export async function getGuildSettings(guildId) {
   if (!guildId) {
     return { managerRole: '@Giveaway Manager', logsChannel: '#giveaways', embedColor: '#8827e5', telemetry: true };
   }
+  const hit = _settingsCache.get(guildId);
+  if (hit && Date.now() - hit.ts < CACHE_TTL) return hit.data;
+
+  let result;
   try {
     const { data, error } = await supabase
       .from('settings')
@@ -29,7 +36,7 @@ export async function getGuildSettings(guildId) {
       .maybeSingle();
 
     if (!error && data) {
-      return {
+      result = {
         managerRole: data.manager_role,
         logsChannel: data.logs_channel,
         embedColor: data.embed_color,
@@ -39,7 +46,9 @@ export async function getGuildSettings(guildId) {
   } catch (err) {
     console.log(`[getGuildSettings] Supabase settings fetch failed, using local fallback: ${err.message}`);
   }
-  return getLocalSettings(guildId);
+  result ??= getLocalSettings(guildId);
+  _settingsCache.set(guildId, { data: result, ts: Date.now() });
+  return result;
 }
 
 export async function hasManagerPermission(member, guildId) {

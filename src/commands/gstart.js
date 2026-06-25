@@ -5,7 +5,6 @@ import {
   TextInputStyle,
   ActionRowBuilder,
 } from 'discord.js';
-import { hasManagerPermission } from '../utils/settingsHelper.js';
 
 export default {
   data: new SlashCommandBuilder()
@@ -13,14 +12,6 @@ export default {
     .setDescription('Start a timed giveaway with automatic winner selection'),
 
   async execute(interaction) {
-    const isManager = await hasManagerPermission(interaction.member, interaction.guildId);
-    if (!isManager) {
-      return interaction.reply({
-        content: '❌ You do not have the required manager role or permissions to run this command.',
-        ephemeral: true,
-      });
-    }
-
     const modal = new ModalBuilder()
       .setCustomId('gstart_modal')
       .setTitle('🎊 Start a Giveaway');

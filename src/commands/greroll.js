@@ -19,15 +19,14 @@ export default {
     .setDescription('Pick new winner(s) for a completed giveaway'),
 
   async execute(interaction) {
+    await interaction.deferReply({ ephemeral: true });
+
     const isManager = await hasManagerPermission(interaction.member, interaction.guildId);
     if (!isManager) {
-      return interaction.reply({
+      return interaction.editReply({
         content: '❌ You do not have the required manager role or permissions to run this command.',
-        ephemeral: true,
       });
     }
-
-    await interaction.deferReply({ ephemeral: true });
 
     const { data: giveaways, error } = await supabase
       .from('giveaways')
